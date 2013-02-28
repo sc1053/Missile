@@ -33,7 +33,7 @@ public class Missile extends MovingEntity {
 	public boolean isPressed;
 	
 	//time for engine to burnout
-	public static final long BURNOUT = 12;
+	public static final long BURNOUT = 15;
 	
 	//total time elapsed in nanoseconds
 	private double totalTime;
