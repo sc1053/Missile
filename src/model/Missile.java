@@ -15,8 +15,8 @@ import javax.imageio.ImageIO;
  */
 public class Missile extends MovingEntity {
 	
-	public static final int BLAST_RADIUS = 85;
-	private SteeringBehaviors steering;
+	public static final int BLAST_RADIUS = 54;
+	
 	public Vector2D gForce;
 	
 	public enum State {
@@ -33,7 +33,7 @@ public class Missile extends MovingEntity {
 	public boolean isPressed;
 	
 	//time for engine to burnout
-	public static final long BURNOUT = 15;
+	public static final long BURNOUT = 25;
 	
 	//total time elapsed in nanoseconds
 	private double totalTime;
@@ -129,7 +129,7 @@ public class Missile extends MovingEntity {
 		calculateLift();
 		calculateDrag();
 		calculateWeight();
-
+        //add up, calculate acceleration/position
 		
 		if(state == State.ACCEL){
 			thrustForce = (int) thrust.x;
@@ -137,20 +137,17 @@ public class Missile extends MovingEntity {
 			liftForce = (int) lift.x;
 		
 			//convert forces into acceleration
-			Vector2D accel1 = thrust.div(mass);		
-			Vector2D accel2 = lift.div(mass);
-			Vector2D accel3 = drag.div(mass);
+		
 			Vector2D accel4 = new Vector2D (0, -weight/mass);
+		
+		    Vector2D force = thrust.add(lift);
+		    force = force.add(drag);
+		    force = force.add(accel4);
+		    Vector2D accel = force.div(mass);
+			//add vector /mass * delta t
 			
-			//gForce = new Vector2D (accel1.add(accel2).add(accel3));
-			//gForce = gForce.div(.0098);
-			//gForce.y = Math.abs(gForce.y);
-			
-			//add accelerations to velocity
-			velocity = velocity.add(accel1);
-			velocity = velocity.sub(accel2);
-			velocity = velocity.sub(accel3);
-			velocity = velocity.sub(accel4);
+			//add accelerations to velocity -- (multiply by delta t -- )
+			velocity = velocity.add(accel.mul(delta));
 			velocity.truncate(this.maxSpeed);
 			
 		}else{
@@ -199,11 +196,11 @@ public class Missile extends MovingEntity {
 	private void getDesiredAngle() {
 		
 		if (guide == Guidance.PROPOTIONAL && timeSeconds > COOLDOWN && state != State.GROUND)
-			desiredAngle = steering.proportional();
+			desiredAngle = steering.proportionalWander();
 		else if(guide == Guidance.PURSUIT && timeSeconds > COOLDOWN && state != State.GROUND)
-			desiredAngle = steering.pursuit(steering.getMyTarget());	
+			desiredAngle = steering.pursuitWander(steering.getMyTarget());	
 		else if(guide == Guidance.PARALLEL &&  calledOnce != true && timeSeconds > COOLDOWN && state != State.GROUND){
-			desiredAngle = steering.parallel(steering.getMyTarget());
+			desiredAngle = steering.parallelWander(steering.getMyTarget());
 			calledOnce = true;
 		}
 		
@@ -293,8 +290,14 @@ public class Missile extends MovingEntity {
 		double Pf = (Pc - Ph);
 		double temp = (Gc * u)/g;
 		temp += Pf*Sb;
-		thrust = new Vector2D(temp, -temp);
-	}
+		//thrust = new Vector2D(temp, -temp); //magnitude -- vector along normalize angle multiply temp
+		thrust = new Vector2D(Math.cos(Math.toRadians(curAngle)), -Math.sin(Math.toRadians(curAngle)));
+		System.out.println(thrust);
+		thrust.mul(temp);
+		System.out.println("Temp"+temp);
+		System.out.println("CurAngle"+curAngle);
+		
+	} //x,y coordinates from sin and cos -> normalized vector
 	
 	private void calculateDrag(){
 		drag = velocity.sq();
@@ -339,11 +342,6 @@ public class Missile extends MovingEntity {
 
 	public void dragMissile() {
 		position.x = MouseInfo.getPointerInfo().getLocation().x;		
-	}
-	
-	public State getMissileState()
-	{
-		return state;
 	}
 
 }
