@@ -131,7 +131,7 @@ public class Missile extends MovingEntity {
 		calculateWeight();
         //add up, calculate acceleration/position
 		
-		if(state == State.ACCEL){
+		if(state == State.ACCEL || state == State.FREEFALL){
 			thrustForce = (int) thrust.x;
 			dragForce = (int) drag.x;
 			liftForce = (int) lift.x;
@@ -184,13 +184,16 @@ public class Missile extends MovingEntity {
 		if(state == State.GROUND || state == State.EXPLODE)
 			velocity.Zero();
 		else if (state == State.ACCEL){
-			position.x = position.x + (velocity.x * Math.cos(Math.toRadians(curAngle)) * timeSeconds);
-			position.y = position.y + velocity.y * timeSeconds * Math.sin(Math.toRadians(curAngle));
+			//position.x = position.x + (velocity.x * Math.cos(Math.toRadians(curAngle)) * timeSeconds);
+			position.x = position.x + velocity.x;
+			//position.y = position.y + velocity.y * timeSeconds * Math.sin(Math.toRadians(curAngle));
+			position.y = position.y + velocity.y;
 		}else if (state == State.FREEFALL){
-			position.y = position.y + velocity.y * timeSeconds * Math.sin(Math.toRadians(curAngle)) + .5 * .098 * timeSeconds*timeSeconds;
-			position.x = position.x + (velocity.x * Math.cos(Math.toRadians(curAngle)) * timeSeconds);
+			//position.y = position.y + velocity.y * timeSeconds * Math.sin(Math.toRadians(curAngle)) + .5 * .098 * timeSeconds*timeSeconds;
+			//position.x = position.x + (velocity.x * Math.cos(Math.toRadians(curAngle)) * timeSeconds);
+			position.y = position.y + velocity.y;
+			position.x = position.x + velocity.x;
 		}
-		
 	}
 
 	private void getDesiredAngle() {
@@ -286,11 +289,16 @@ public class Missile extends MovingEntity {
 			Ph = 2;
 		else if (position.y < 450)
 			Ph = 1;
-
+		if(state == State.FREEFALL)
+			curAngle = -90;
+		else {
+			curAngle = 45;
+		}
 		double Pf = (Pc - Ph);
 		double temp = (Gc * u)/g;
 		temp += Pf*Sb;
 		//thrust = new Vector2D(temp, -temp); //magnitude -- vector along normalize angle multiply temp
+        
 		thrust = new Vector2D(Math.cos(Math.toRadians(curAngle)), -Math.sin(Math.toRadians(curAngle)));
 		System.out.println(thrust);
 		thrust.mul(temp);
